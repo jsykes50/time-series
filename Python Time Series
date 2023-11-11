@@ -1,0 +1,122 @@
+# Time Series
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns 
+
+# Import Excel file:
+df = pd.read_excel(r'C:\Users\Desktop\File 1.xlsx', sheet_name='Analysis')
+
+# Call in the Columns you want in the Dataframe:
+df = df[['Column2', 'Column4']]
+
+# Convert the Date/Time Column to datetime series format:
+df['Column2'] = pd.to_datetime(df['Column2'], format='%m/%d/%Y')
+
+Convert the Date/Time Column Column to an Index:
+df.index = df['Column2']
+del df['Column2']
+print(df.head())
+
+# Generate a line plot using Seaborn:
+sns.lineplot(df)
+
+# Label the Y-axis (Vertical) with Matplotlib:
+plt.ylabel("Number of Passengers")
+
+# Adjust the rotation angle of the X-Axis, as needed:
+plt.xticks(rotation=45)
+plt.show()
+
+# A stationary time series will not have any trends or seasonal patterns. You should check for stationarity because it not only makes modeling time series easier, but it is an underlying assumption in many time series methods.
+rolling_mean = df.rolling(7).mean()
+rolling_std = df.rolling(7).std()
+
+# Matplotlib plot of the Time Series:
+plt.plot(df, color="#0000FF",label="Original Passenger Data")
+
+# Rolling Average:
+plt.plot(rolling_mean, color="#FF0000", label="Rolling Mean Passenger Number")
+
+# Rolling Standard Deviation:
+plt.plot(rolling_std, color="#000000", label = "Rolling Standard Deviation in Passenger Number")
+
+# Chart Title:
+plt.title("Passenger Time Series, Rolling Mean, & Standard Deviation")
+
+# Legend Location:
+plt.legend(loc="best")
+
+# Adjust the rotation angle of the X-Axis, as needed:
+plt.xticks(rotation=45)
+plt.show()
+
+# Augmented Dickey-Fuller test from the statsmodels package:
+from statsmodels.tsa.stattools import adfuller
+
+# Pass the data frame into the adfuller method:
+adft = adfuller(df,autolag="AIC")
+
+# Store the results in a data frame display it:
+output_df = pd.DataFrame({"Values":[adft[0],adft[1],adft[2],adft[3], adft[4]['1%'], adft[4]['5%'], adft[4]['10%']]  , "Metric":["Test Statistics","p-value","No. of lags used","Number of observations used", 
+                                                        "critical value (1%)", "critical value (5%)", "critical value (10%)"]})
+print(output_df)
+
+# Autocorrelation - a measure of how correlated time series data is at a given point in time with past values:
+# For example, if the Column4 data has strong autocorrelation, we can assume that high Column4 numbers today suggest a strong likelihood that they will be high tomorrow as well.
+# Closer the Lag number is to 1, the more correlated it is:
+autocorrelation_lag1 = df['Column4'].autocorr(lag=1)
+print("One Column2 Lag: ", autocorrelation_lag1)
+# Closer the Lag number is to 1, the more correlated it is:
+autocorrelation_lag3 = df['Column4'].autocorr(lag=3)
+print("One Column2 Lag: ", autocorrelation_lag3)
+# Closer the Lag number is to 1, the more correlated it is:
+autocorrelation_lag6 = df['Column4'].autocorr(lag=6)
+print("One Column2 Lag: ", autocorrelation_lag6)
+# Closer the Lag number is to 1, the more correlated it is:
+autocorrelation_lag9 = df['Column4'].autocorr(lag=9)
+print("One Column2 Lag: ", autocorrelation_lag9)
+
+"# Decomposition - another useful way to visualize the trends in time series data:
+"
+from statsmodels.tsa.seasonal import seasonal_decompose
+# This plot shows the trend in Number of Passengers and the seasonality patterns in the ebb and flood in values each period:
+decompose = seasonal_decompose(df['Column4'],model='additive', period=7)
+decompose.plot()
+
+# Adjust the rotation angle of the X-Axis, as needed:
+plt.xticks(rotation=45)
+plt.show()
+
+# Forecasting (Linear Graph) the Number of Passengers:
+df['Date'] = df.index
+train = df[df['Date'] < pd.to_datetime(3/5/2023, format='%m/%d/%Y')]
+train['train'] = train['Column4']
+del train['Date']
+del train['Column4']
+test = df[df['Date'] < pd.to_datetime(3/5/2023, format='%m/%d/%Y')]
+del test['Date']
+test['test'] = test['Column4']
+del test['Column4']
+plt.plot(train, color = "#000000")
+plt.plot(test, color = "#FF0000")
+plt.plot(forecast, color="#00FF00")
+plt.title("Number of Passengers Forecast/Prediction")
+plt.ylabel("Number of Passengers")
+plt.xlabel('Column2')
+sns.set()
+
+# Adjust the rotation angle of the X-Axis, as needed:
+plt.xticks(rotation=45)
+plt.show()
+
+from pmdarima.arima import auto_arima
+model = auto_arima(train, trace=True, error_action='ignore', suppress_warnings=True)
+model.fit(train)
+forecast = model.predict(n_periods=len(test))
+forecast = pd.DataFrame(forecast,index = test.index,columns=['Prediction'])
+
+from math import sqrt
+from sklearn.metrics import mean_squared_error
+rms = sqrt(mean_squared_error(test,forecast))
+print("RMSE: ", rms)
